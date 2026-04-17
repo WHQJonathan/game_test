@@ -1,215 +1,241 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>資訊判讀小遊戲</title>
-<style>
-
-body {
-
-  font-family: sans-serif;
-
-  text-align: center;
-
-  background: #f1f5f9;
-
-  margin: 0;
-
-  padding: 20px;
-
-}
-
-.hidden {
-
-  display: none;
-
-}
-
-.card {
-
-  background: white;
-
-  padding: 20px;
-
-  border-radius: 15px;
-
-  margin: 20px auto;
-
-  width: 90%;
-
-  max-width: 600px;
-
-}
-
-.option-btn {
-
-  display: block;
-
-  width: 80%;
-
-  margin: 10px auto;
-
-  padding: 15px;
-
-  font-size: 18px;
-
-  border-radius: 10px;
-
-  border: none;
-
-  background: #4caf50;
-
-  color: white;
-
-}
-
-#feedback-box {
-
-  margin-top: 20px;
-
-  padding: 15px;
-
-  border-radius: 10px;
-
-  background: #e0f7fa;
-
-}
-</style>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>謠言爭霸戰：挑戰計時版</title>
+   <script src="https://cdn.tailwindcss.com"></script>
+   <script src="https://unpkg.com/lucide@latest"></script>
+   <style>
+       @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
+       body { font-family: 'Noto Sans TC', sans-serif; }
+       .card-enter { animation: slideUp 0.5s ease-out; }
+       @keyframes slideUp {
+           from { opacity: 0; transform: translateY(20px); }
+           to { opacity: 1; transform: translateY(0); }
+       }
+   </style>
 </head>
-<body>
-<!-- 開始畫面 -->
-<div id="screen-start">
-<h1>資訊判讀小遊戲</h1>
-<button id="start-btn">開始遊戲</button>
-</div>
-<!-- 遊戲畫面 -->
-<div id="screen-playing" class="hidden">
-<div id="stats-bar">
+<body class="bg-slate-50 min-h-screen flex items-center justify-center p-4">
 
-    分數：<span id="score-display">0</span>｜
+   <div id="game-container" class="max-w-4xl w-full">
+       <!-- 頂部資訊列 -->
+       <div class="mb-4 flex justify-between items-center px-4">
+           <div class="flex items-center gap-2">
+               <div class="bg-indigo-600 p-2 rounded-lg text-white shadow-lg">
+                   <i data-lucide="shield-check" class="w-6 h-6"></i>
+               </div>
+               <div>
+                   <h1 class="text-xl font-black text-slate-800 tracking-tight leading-none uppercase">Radar Radar</h1>
+                   <span class="text-[10px] font-bold text-indigo-500 tracking-[0.2em]">謠言偵錯雷達站</span>
+               </div>
+           </div>
+           <div id="playing-stats" class="hidden flex gap-4">
+               <div class="bg-white border-2 border-slate-200 px-4 py-2 rounded-2xl flex items-center gap-2 shadow-sm">
+                   <i data-lucide="timer" class="w-4 h-4 text-indigo-500"></i>
+                   <span id="timer-display" class="font-mono font-black text-lg text-slate-700 w-12 text-center">0s</span>
+               </div>
+               <div class="bg-indigo-600 px-5 py-2 rounded-2xl text-white font-black shadow-lg flex items-center gap-2">
+                   <i data-lucide="trophy" class="w-4 h-4 text-yellow-300"></i>
+                   <span id="score-display">0</span>
+               </div>
+           </div>
+       </div>
 
-    時間：<span id="timer-display">0s</span>
-</div>
-<div class="card">
-<div id="q-number"></div>
-<p id="question-text"></p>
-<button class="option-btn" onclick="checkAnswer('reliable')">可信</button>
-<button class="option-btn" onclick="checkAnswer('verify')">需查證</button>
-<button class="option-btn" onclick="checkAnswer('trap')">陷阱</button>
-<div id="feedback-box" class="hidden"></div>
-</div>
-</div>
-<!-- 結果畫面 -->
-<div id="screen-result" class="hidden">
-<h2>遊戲結束</h2>
-<p>分數：<span id="final-score"></span></p>
-<p>時間：<span id="final-time"></span> 秒</p>
-<button id="restart-btn">再玩一次</button>
-</div>
-<script>
+       <!-- 主遊戲區域 -->
+       <div class="bg-white rounded-[2.5rem] shadow-2xl border-b-[12px] border-slate-200 overflow-hidden min-h-[520px] flex flex-col relative">
+           
+           <!-- 開始畫面 -->
+           <div id="screen-start" class="flex-1 flex flex-col items-center justify-center p-10 text-center bg-gradient-to-b from-white to-slate-50">
+               <div class="relative mb-10">
+                   <div class="w-28 h-28 bg-indigo-50 rounded-full animate-ping absolute opacity-40"></div>
+                   <div class="w-28 h-28 bg-indigo-600 rounded-[2rem] flex items-center justify-center relative shadow-2xl transform rotate-6 hover:rotate-0 transition-transform duration-500">
+                       <i data-lucide="play" class="w-14 h-14 text-white fill-current ml-1"></i>
+                   </div>
+               </div>
+               <h2 class="text-4xl font-black mb-4 text-slate-800">偵錯雷達：啟動！</h2>
+               <p class="text-slate-500 max-w-sm mb-10 font-bold leading-relaxed">
+                   計時器將在開始後啟動。<br/>
+                   挑戰在最短時間內辨識 10 則訊息！
+               </p>
+               <button onclick="startGame()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-14 py-5 rounded-[1.5rem] text-2xl font-black transition-all active:scale-95 shadow-xl shadow-indigo-100 flex items-center gap-3">
+                   立刻開始
+               </button>
+           </div>
 
-const CARDS_DATA = [
+           <!-- 遊玩畫面 -->
+           <div id="screen-playing" class="hidden flex-1 flex flex-col">
+               <div class="h-3 bg-slate-100 w-full overflow-hidden">
+                   <div id="progress-bar" class="h-full bg-indigo-500 transition-all duration-700 ease-out" style="width: 0%"></div>
+               </div>
+               <div class="flex-1 flex flex-col p-8 md:p-12">
+                   <div class="flex-1 flex items-center justify-center mb-10">
+                       <div id="card-box" class="w-full max-w-2xl p-10 md:p-14 rounded-[3rem] border-4 bg-slate-50 border-slate-100 shadow-inner transition-all duration-500 relative">
+                           <div id="card-header" class="absolute -top-4 left-1/2 -translate-x-1/2 bg-white px-6 py-1 rounded-full border-2 border-slate-200 text-[10px] font-black text-slate-400 tracking-widest uppercase">Analyzing Message</div>
+                           <p id="card-text" class="text-2xl md:text-3xl font-black text-center text-slate-700 leading-tight">訊息讀取中...</p>
+                           <div id="feedback-box" class="hidden mt-10 p-5 rounded-2xl flex items-start gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500 bg-white/80 border">
+                               <div id="feedback-icon" class="mt-1 shrink-0"></div>
+                               <div class="text-base font-bold leading-snug">
+                                   <span class="block text-xs uppercase mb-1 opacity-60 tracking-wider">Analysis Result</span>
+                                   <span id="feedback-msg"></span>
+                               </div>
+                           </div>
+                       </div>
+                   </div>
+                   <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                       <button onclick="handleChoice('reliable')" class="choice-btn flex flex-col items-center p-6 rounded-[2rem] border-4 border-emerald-100 bg-emerald-50/50 hover:bg-emerald-500 hover:text-white transition-all active:scale-95">
+                           <i data-lucide="shield-check" class="w-8 h-8 mb-2"></i>
+                           <span class="font-black text-xl mb-1">✅ 官方可信</span>
+                           <span class="text-[10px] font-black opacity-60">政府、專業、中性</span>
+                       </button>
+                       <button onclick="handleChoice('trap')" class="choice-btn flex flex-col items-center p-6 rounded-[2rem] border-4 border-rose-100 bg-rose-50/50 hover:bg-rose-500 hover:text-white transition-all active:scale-95">
+                           <i data-lucide="alert-octagon" class="w-8 h-8 mb-2"></i>
+                           <span class="font-black text-xl mb-1">❌ 詐騙陷阱</span>
+                           <span class="text-[10px] font-black opacity-60">誇張、要個資、連結</span>
+                       </button>
+                       <button onclick="handleChoice('verify')" class="choice-btn flex flex-col items-center p-6 rounded-[2rem] border-4 border-amber-100 bg-amber-50/50 hover:bg-amber-500 hover:text-white transition-all active:scale-95">
+                           <i data-lucide="search" class="w-8 h-8 mb-2"></i>
+                           <span class="font-black text-xl mb-1">🔍 待查訊息</span>
+                           <span class="text-[10px] font-black opacity-60">突發、需比對真相</span>
+                       </button>
+                   </div>
+               </div>
+           </div>
 
-      { id: 1, text: "國立故宮博物院官網介紹：「翠玉白菜原是嫁妝，象徵新娘的清白與多子多孫。」", type: "reliable", reason: "來自官方網站，資訊透明且語氣中性。" },
-      { id: 2, text: "中央氣象署發布：週五低溫降至 12 度，請注意保暖。", type: "reliable", reason: "政府氣象單位發布，具有公共服務權威。" },
-      { id: 3, text: "衛福部宣導：正確洗手五步驟為「濕、搓、沖、捧、擦」。", type: "reliable", reason: "正式衛生單位提供的衛教知識。" },
-      { id: 4, text: "限時 24 小時！點擊連結領取永久免費 LINE 貼圖。", type: "trap", reason: "用「限時、免費」當誘餌，是典型的網路陷阱。" },
-      { id: 5, text: "恭喜中獎！請輸入身分證字號與地址，以便寄送中獎手機。", type: "trap", reason: "要求提供個人私密資料，百分之百是詐騙。" },
-      { id: 6, text: "每天喝鹽水可以清除體內所有毒素，不用看醫生。", type: "trap", reason: "誇大醫療效果且來源不明，會耽誤就醫。" },
-      { id: 7, text: "剛才台北發生大地震，天佑台灣！大家還好嗎？", type: "verify", reason: "需查證官方資訊，避免誤傳。" },
-      { id: 8, text: "手機電量剩 10% 時輻射會增加千倍，傷大腦。", type: "verify", reason: "需查證科學數據。" },
-      { id: 9, text: "快訊！因颱風逼近，南部各縣市已宣布明天停班停課。", type: "verify", reason: "需查證政府公告。" },
-      { id: 10, text: "研究驚爆：喝一杯手搖飲等於自我毀滅！", type: "trap", reason: "過度誇大，屬假資訊。" }
+           <!-- 結果畫面 -->
+           <div id="screen-result" class="hidden flex-1 flex flex-col items-center justify-center p-12 text-center bg-indigo-900 text-white relative">
+               <i data-lucide="trophy" class="w-28 h-28 text-yellow-400 mb-8 animate-bounce"></i>
+               <h2 class="text-5xl font-black mb-4 tracking-tighter">任務完結！</h2>
+               <div class="flex flex-col md:flex-row gap-8 mb-12">
+                   <div class="bg-white/10 px-10 py-6 rounded-[2rem] border border-white/20 backdrop-blur-sm">
+                       <div class="text-xs font-black opacity-60 uppercase tracking-[0.2em] mb-1">Final Score</div>
+                       <div id="final-score" class="text-6xl font-black">0</div>
+                   </div>
+                   <div class="bg-white/10 px-10 py-6 rounded-[2rem] border border-white/20 backdrop-blur-sm">
+                       <div class="text-xs font-black opacity-60 uppercase tracking-[0.2em] mb-1">Total Time</div>
+                       <div id="final-time" class="text-6xl font-black">0<span class="text-2xl ml-1">s</span></div>
+                   </div>
+               </div>
+               <button onclick="location.reload()" class="flex items-center gap-3 bg-white text-indigo-900 px-12 py-5 rounded-[1.5rem] text-xl font-black transition-all active:scale-95 shadow-2xl hover:bg-indigo-50">
+                   <i data-lucide="rotate-ccw" class="w-6 h-6"></i>
+                   重新挑戰計時
+               </button>
+           </div>
+       </div>
+   </div>
 
-];
+   <script>
+       const CARDS_DATA = [
+           { id: 1, text: "國立故宮博物院官網介紹：「翠玉白菜原是嫁妝，象徵新娘的清白與多子多孫。」", type: "reliable", reason: "來自官方網站，資訊透明且語氣中性。" },
+           { id: 2, text: "中央氣象署發布：週五低溫降至 12 度，請注意保暖。", type: "reliable", reason: "政府氣象單位發布，具有公共服務權威。" },
+           { id: 3, text: "衛福部宣導：正確洗手五步驟為「濕、搓、沖、捧、擦」。", type: "reliable", reason: "正式衛生單位提供的衛教知識。" },
+           { id: 4, text: "限時 24 小時！點擊連結領取永久免費 LINE 貼圖。", type: "trap", reason: "用「限時、免費」當誘餌，是典型的網路陷阱。" },
+           { id: 5, text: "恭喜中獎！請輸入身分證字號與地址，以便寄送中獎手機。", type: "trap", reason: "要求提供個人私密資料，百分之百是詐騙。" },
+           { id: 6, text: "每天喝鹽水可以清除體內所有毒素，不用看醫生。", type: "trap", reason: "誇大醫療效果且來源不明，會耽誤就醫。" },
+           { id: 7, text: "剛才台北發生大地震，天佑台灣！大家還好嗎？", type: "verify", reason: "地震消息需以氣象署正式測報為準，避免誤傳舊聞。" },
+           { id: 8, text: "手機電量剩 10% 時輻射會增加千倍，傷大腦。", type: "verify", reason: "屬於科學傳聞，需要查看專家實驗數據來確認真相。" },
+           { id: 9, text: "快訊！因颱風逼近，南部各縣市已宣布明天停班停課。", type: "verify", reason: "需核實人事行政總處官網，避免假造的新聞圖。" },
+           { id: 10, text: "研究驚爆：喝一杯手搖飲等於自我毀滅，大腦細胞瞬間死光！", type: "trap", reason: "標題極度恐怖且用詞激進，屬於聳動的假資訊。" }
+       ];
 
-let index = 0, score = 0, timer = 0, t;
+       let shuffledCards = [];
+       let currentIndex = 0;
+       let score = 0;
+       let timer = 0;
+       let timerInterval = null;
+       let isProcessing = false;
 
-function startGame() {
+       function startGame() {
+           shuffledCards = [...CARDS_DATA].sort(() => Math.random() - 0.5);
+           currentIndex = 0;
+           score = 0;
+           timer = 0;
+           
+           document.getElementById('screen-start').classList.add('hidden');
+           document.getElementById('screen-playing').classList.remove('hidden');
+           document.getElementById('playing-stats').classList.remove('hidden');
+           
+           updateCard();
+           startTimer();
+           lucide.createIcons();
+       }
 
-  index = 0;
+       function startTimer() {
+           if (timerInterval) clearInterval(timerInterval);
+           timerInterval = setInterval(() => {
+               timer++;
+               document.getElementById('timer-display').innerText = timer + 's';
+           }, 1000);
+       }
 
-  score = 0;
+       function stopTimer() {
+           clearInterval(timerInterval);
+       }
 
-  timer = 0;
+       function updateCard() {
+           const card = shuffledCards[currentIndex];
+           document.getElementById('card-text').innerText = `「${card.text}」`;
+           document.getElementById('card-header').innerText = `Analyzing Message ${currentIndex + 1} / 10`;
+           document.getElementById('progress-bar').style.width = `${((currentIndex + 1) / 10) * 100}%`;
+           
+           // 重置反饋
+           document.getElementById('feedback-box').classList.add('hidden');
+           document.getElementById('card-box').className = "w-full max-w-2xl p-10 md:p-14 rounded-[3rem] border-4 bg-slate-50 border-slate-100 shadow-inner transition-all duration-500 relative card-enter";
+           isProcessing = false;
+       }
 
-  document.getElementById('screen-start').classList.add('hidden');
+       function handleChoice(type) {
+           if (isProcessing) return;
+           isProcessing = true;
+           stopTimer(); // 顯示解析時暫停計時
 
-  document.getElementById('screen-playing').classList.remove('hidden');
+           const card = shuffledCards[currentIndex];
+           const isCorrect = card.type === type;
+           if (isCorrect) {
+               score++;
+               document.getElementById('score-display').innerText = score * 10;
+           }
 
-  t = setInterval(() => {
+           // 顯示解析
+           const feedbackBox = document.getElementById('feedback-box');
+           const feedbackIcon = document.getElementById('feedback-icon');
+           const cardBox = document.getElementById('card-box');
+           
+           feedbackBox.classList.remove('hidden');
+           document.getElementById('feedback-msg').innerText = card.reason;
+           
+           if (isCorrect) {
+               cardBox.className = "w-full max-w-2xl p-10 md:p-14 rounded-[3rem] border-4 bg-emerald-50 border-emerald-500 shadow-emerald-50 relative";
+               feedbackIcon.innerHTML = '<i data-lucide="check-circle-2" class="w-7 h-7 text-emerald-600"></i>';
+           } else {
+               cardBox.className = "w-full max-w-2xl p-10 md:p-14 rounded-[3rem] border-4 bg-rose-50 border-rose-500 shadow-rose-50 relative";
+               feedbackIcon.innerHTML = '<i data-lucide="x-circle" class="w-7 h-7 text-rose-600"></i>';
+           }
+           lucide.createIcons();
 
-    timer++;
+           setTimeout(() => {
+               if (currentIndex < shuffledCards.length - 1) {
+                   currentIndex++;
+                   updateCard();
+                   startTimer();
+               } else {
+                   showResult();
+               }
+           }, 2500);
+       }
 
-    document.getElementById('timer-display').innerText = timer + "s";
+       function showResult() {
+           document.getElementById('screen-playing').classList.add('hidden');
+           document.getElementById('playing-stats').classList.add('hidden');
+           document.getElementById('screen-result').classList.remove('hidden');
+           
+           document.getElementById('final-score').innerText = score * 10;
+           document.getElementById('final-time').innerText = timer;
+           lucide.createIcons();
+       }
 
-  }, 1000);
-
-  showQ();
-
-}
-
-function showQ() {
-
-  let q = CARDS_DATA[index];
-
-  document.getElementById('question-text').innerText = q.text;
-
-  document.getElementById('q-number').innerText = `第 ${index+1} 題`;
-
-}
-
-function checkAnswer(type) {
-
-  let q = CARDS_DATA[index];
-
-  if (q.type === type) score++;
-
-  let fb = document.getElementById('feedback-box');
-
-  fb.classList.remove('hidden');
-
-  fb.innerText = q.reason;
-
-  setTimeout(() => {
-
-    fb.classList.add('hidden');
-
-    index++;
-
-    if (index < CARDS_DATA.length) {
-
-      showQ();
-
-    } else {
-
-      endGame();
-
-    }
-
-  }, 1500);
-
-}
-
-function endGame() {
-
-  clearInterval(t);
-
-  document.getElementById('screen-playing').classList.add('hidden');
-
-  document.getElementById('screen-result').classList.remove('hidden');
-
-  document.getElementById('final-score').innerText = score;
-
-  document.getElementById('final-time').innerText = timer;
-
-}
-
-document.getElementById('start-btn').onclick = startGame;
-
-document.getElementById('restart-btn').onclick = startGame;
-</script>
+       // 初始化圖示
+       lucide.createIcons();
+   </script>
 </body>
 </html>
- 
